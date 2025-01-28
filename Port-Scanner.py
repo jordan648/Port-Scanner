@@ -3,6 +3,7 @@ import threading
 import tkinter as tk
 from tkinter import messagebox, filedialog
 import csv
+import platform
 
 
 def scan_port(ip, port, results):
@@ -11,10 +12,24 @@ def scan_port(ip, port, results):
             s.settimeout(0.5)
             if s.connect_ex((ip, port)) == 0:
                 results.append((port, 'Open'))
+                try:
+                    s.send(b'\r\n')
+                    banner = s.recv(1024).decode().strip()
+                    results.append((port, f'Banner: {banner}'))
+                except Exception:
+                    results.append((port, 'Banner: Not available'))
             else:
                 results.append((port, 'Closed'))
     except Exception as e:
         results.append((port, f'Error: {str(e)}'))
+
+
+def get_os_info():
+    try:
+        os_info = platform.uname()
+        return f"System: {os_info.system}, Node: {os_info.node}, Release: {os_info.release}, Version: {os_info.version}, Machine: {os_info.machine}, Processor: {os_info.processor}"
+    except Exception as e:
+        return f"Error retrieving OS information: {str(e)}"
 
 def start_scan(ip, start_port, end_port):
     results = []
@@ -34,11 +49,16 @@ def on_scan():
     if not ip or not start_port or not end_port:
         messagebox.showerror('Error', 'Please fill in all fields')
         return
+    os_info = get_os_info()
+    results_text.insert(tk.END, f"\nLocal System Information:\n{os_info}\n\n")
     results_text.delete(1.0, tk.END)
     results_text.insert(tk.END, f"Scanning {ip} from port {start_port} to {end_port}...\n")
     results = start_scan(ip, start_port, end_port)
     for port, status in results:
-        results_text.insert(tk.END, f"Port {port}: {status}\n")
+        if isinstance(status, tuple):
+            results_text.insert(tk.END, f"Port {status[0]}: {status[1]}\n")
+        else:
+            results_text.insert(tk.END, f"Port {port}: {status}\n")
 
 def save_results():
     results = results_text.get(1.0, tk.END).strip().split('\n')
