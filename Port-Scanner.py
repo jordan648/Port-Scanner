@@ -73,15 +73,21 @@ def terminal_scan(ip, start_port, end_port, save_file, show_os):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Port Scanner')
     parser.add_argument('-i', type=str, help='Target IP address')
-    parser.add_argument('-s', type=int, help='Start port')
-    parser.add_argument('-e', type=int, help='End port')
+    parser.add_argument('-s', nargs='*', help='Specify port range or use "-p-" to scan all ports')
     parser.add_argument('-f', type=str, help='File to save results')
-    parser.add_argument('-o', '--os-info', type=str, help='Get Os information')
+    parser.add_argument('-o', '--os-info', action="store_true",help='Get Os information')
     parser.add_argument('--gui', action="store_true", help='Load GUI')
     args = parser.parse_args() 
 
-    if not args.i and args.s and args.e and args.f and args.o and args.gui:
-        terminal_scan(args.i, args.s, args.e, args.f, args.o, args.gui)    
+    if args.p == ['-']:
+        start_port, end_port = 1, 65535
+    elif args.p and len(args.p) == 2:
+        start_port, end_port = int(args.p[0]), int(args.p[1])
+    else:
+        parser.error("Invalid port range specified")
+
+    if not args.i and args.gui:
+        terminal_scan(args.i, start_port, end_port, args.f, args.o, args.gui)    
     else:
 
 
